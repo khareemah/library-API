@@ -44,7 +44,7 @@ const BookSchema = new mongoose.Schema({
   },
   isbn: {
     type: Number,
-    // required: [true, 'isbn must be provided'],
+    required: [true, 'isbn must be provided'],
   },
 });
 
