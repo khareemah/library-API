@@ -72,7 +72,7 @@ const verifyEmail = async (req, res) => {
 };
 
 const regenerateOTP = async (req, res) => {
-
+console.log(req.body)
     try {
         let otpCode = generateOTP();
 
