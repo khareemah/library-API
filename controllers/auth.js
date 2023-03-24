@@ -113,4 +113,53 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, login, verifyEmail, regenerateOTP };
+const forgotPassword = async (req, res) => {
+  // const { error } = regValidation(req.body);
+
+  // if (error) {
+  //   return res.status(400).send({ message: error.details[0].message });
+  // }
+
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    return res.status(404).send("Email not found");
+  }
+
+  try {
+    let otpCode = generateOTP();
+
+    const info = await sendEMail(req.body.email, otpCode);
+    if (!info) {
+      throw new Error(`Error sending email`);
+    }
+
+    await new OTP({
+      email: req.body.email,
+      code: otpCode,
+    }).save();
+
+    res.status(200).send("An OTP was sent to your account, please verify");
+  } catch (err) {
+    res.status(500).json({ message: `${err}` });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { email, otp, password } = req.body;
+
+  const otpData = await OTP.findOne({ email, code: otp });
+  if (!otpData || otpData.expires < Date.now()) {
+    return res.status(400).send("Invalid or expired OTP");
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  await User.updateOne({ email }, { $set: { password: hashedPassword } });
+  await OTP.deleteOne({ email, code: otp });
+
+  res.status(200).send("Password updated successfully");
+};
+
+
+module.exports = { registerUser, login, verifyEmail, regenerateOTP,forgotPassword,resetPassword };
